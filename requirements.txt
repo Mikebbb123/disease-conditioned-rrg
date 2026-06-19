@@ -1,0 +1,34 @@
+# DiseaseT5 — main environment (environment A in SETUP.md)
+# Python >= 3.9, CUDA-capable GPU recommended.
+#
+# This file covers our model (train + eval) and the scoring pipeline only.
+# The external baselines (R2Gen, PromptMRG) have mutually incompatible
+# dependencies and run in their OWN isolated environments — see SETUP.md.
+#
+# NOTE: pycocoevalcap is intentionally NOT listed here. The R2Gen repo vendors
+# its own copy, and a pip-installed pycocoevalcap clashes with it (see SETUP.md).
+# The R2Gen official NLG protocol is loaded from $R2GEN_REPO at runtime.
+
+# ---- core model ----
+torch>=2.0
+torchvision>=0.15
+torchxrayvision>=1.2.0          # frozen ChestX-ray14 ResNet-50 + pathology classifier
+transformers>=4.30,<5           # <5: f1chexbert monkey-patches _batch_encode_plus; T5 fast tokenizer offsets
+peft>=0.7.0                     # LoRA adapters
+
+# ---- clinical / NLG evaluation ----
+f1chexbert>=0.0.2               # CheXbert clinical F1 (downloads its own weights)
+radgraph>=0.1.0                 # RadGraph factual-consistency F1 (downloads its own weights)
+rouge-score>=0.1.2
+nltk>=3.8
+
+# ---- analysis (significance tests, independence check, common-subset scoring) ----
+scikit-learn>=1.2
+scipy>=1.10
+pandas>=1.5
+
+# ---- data / utils / figures ----
+numpy>=1.24                     # main env uses a recent numpy; R2Gen's old-numpy pin is isolated (SETUP.md env B)
+Pillow>=9.0
+tqdm>=4.65
+matplotlib>=3.6                 # make_plots.py
