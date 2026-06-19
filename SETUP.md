@@ -3,12 +3,12 @@
 Reproducing the cross-model comparison (Table 1 / 1b) involves running several
 external baselines through our scoring pipeline. **These baselines have mutually
 incompatible dependencies** — most importantly different `transformers` /
-`numpy` versions — so they must NOT share one Python environment. Use the four
+`numpy` versions — so they must NOT share one Python environment. Use the five
 isolated setups below.
 
-External repos (`R2Gen/`, `PromptMRG/`, `chexpert-labeler/`, `NegBio/`),
-downloaded checkpoints (`ckpts/`), and generated dumps (`dumps/`) are all
-git-ignored — clone / download them locally, don't commit them.
+External repos (`R2Gen/`, `PromptMRG/`, `chexpert-labeler/`, `NegBio/`,
+`vlm-radiology-report/`), downloaded checkpoints (`ckpts/`), and generated dumps
+(`dumps/`) are all git-ignored — clone / download them locally, don't commit them.
 
 | # | Environment | Used by | Key constraint |
 |---|-------------|---------|----------------|
@@ -16,6 +16,7 @@ git-ignored — clone / download them locally, don't commit them.
 | B | R2Gen | `baselines/r2gen_test_dump.py` | `numpy==1.23.5` (old) |
 | C | PromptMRG | `baselines/promptmrg_test_dump.py` | `transformers==4.25.0`, isolated venv |
 | D | CheXpert labeler | `analysis/chexpert_independence_check.py` | conda env + Java 8 (optional) |
+| E | Qwen2-VL / NN (`vlm-radiology-report` repo) | Qwen2-VL + LoRA, Qwen oracle, NN retrieval dumps | `transformers>=4.45,<5`, isolated venv |
 
 ---
 
@@ -138,3 +139,72 @@ running `analysis/chexpert_independence_check.py`.
 > CheXpert rule-based labeler, so they are not statistically independent. Treat
 > this as a parameter-independent sanity check, not proof of labeler-independent
 > clinical content.
+
+---
+
+## E. Qwen2-VL / NN baselines (`vlm-radiology-report` repo)
+
+The **Qwen2-VL + LoRA**, **Qwen2-VL (oracle)**, and **NN retrieval** rows in
+Table 1 / 1b are produced in our separate empirical-study repo
+(`vlm-radiology-report`), not here. Only the prediction **dumps** cross over: we
+copy them into `dumps/` and re-score them through *this* repo's pipeline
+(environment A), so every method is scored under the same R2Gen-NLG / CheXbert /
+RadGraph protocol. (Clinical scores match across the two repos because both use
+the same CheXbert/RadGraph code; only the NLG protocol differs, which is exactly
+why the dumps must be re-scored in environment A rather than copied as numbers.)
+
+Qwen2-VL inference needs a **recent** `transformers` (`>=4.45`) plus
+`qwen-vl-utils`, which conflicts with environments B/C — isolate it.
+
+```bash
+git clone https://github.com/Mikebbb123/vlm-radiology-report.git
+cd vlm-radiology-report
+
+python -m venv .venv-qwen && source .venv-qwen/bin/activate
+pip install "transformers>=4.45,<5" accelerate peft qwen-vl-utils \
+    torch torchvision torchxrayvision nltk rouge-score
+```
+
+Provide the IU-Xray data and the trained Qwen2-VL LoRA adapter (see that repo's
+README; the adapter is git-ignored — download or train it there). Then generate
+the three dumps:
+
+```bash
+# --- Qwen2-VL + LoRA (no hint = the plain baseline row) ---
+python evaluate.py --no_disease \
+    --model_path .../lora_discourse \
+    --output_file eval_qwen.json          # -> eval_qwen_preds.json
+
+# --- Qwen2-VL (oracle): GT findings routed through the CAT hint channel ---
+python make_oracle_hints.py --output_file oracle_hints.json
+python evaluate.py --use_cat_hints \
+    --cat_hint_file oracle_hints.json \
+    --model_path .../lora_discourse \
+    --output_file eval_qwen_oracle.json   # -> eval_qwen_oracle_preds.json
+
+# --- NN retrieval (zero training) ---
+python vff/precompute_densenet_features.py   # builds densenet_feats.npz (once)
+python nn/NN.py                              # -> nn_top1_test_generated.json
+```
+
+`evaluate.py` writes the full per-sample predictions to `<output_file>_preds.json`
+as `[{"id", "reference", "generated"}, ...]`; `nn/NN.py` writes the same schema.
+These are consumed directly by our scorers (they read the `generated` field).
+
+Copy the dumps into this repo and re-score in environment A:
+
+```bash
+cp eval_qwen_preds.json         /path/to/disease-rrg/main_model/dumps/qwen_test_generated.json
+cp eval_qwen_oracle_preds.json  /path/to/disease-rrg/main_model/dumps/qwen_oracle_test_generated.json
+cp nn_top1_test_generated.json  /path/to/disease-rrg/main_model/dumps/
+
+cd /path/to/disease-rrg/main_model       # environment A
+python baselines/score_r2gen.py          # per-method scoring
+python analysis/score_common_subset.py   # 349-study common subset (Table 1b)
+python analysis/significance_test.py     # paired bootstrap CI + p-value
+```
+
+> Note for the paper: Qwen2-VL + LoRA is a generic-VLM transfer baseline (no
+> radiology-specific pretraining); the oracle row leaks GT disease labels and is
+> an upper-bound reference only.
+
