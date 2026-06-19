@@ -1,0 +1,50 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# ---- Data (not redistributed) ----
+data/
+*.json.gz
+annotation.json
+
+# ---- Model artifacts / caches ----
+cache/
+*.pt
+*.pth
+*.ckpt
+*.bin
+ckpts/
+
+# ---- Baseline reproduction (clone / download locally, never commit) ----
+R2Gen/
+PromptMRG/
+chexpert-labeler/
+NegBio/
+dumps/
+.venv-r2gen/
+.venv-pmrg/
+pmrg-venv/
+
+# ---- Outputs ----
+outputs/
+output_*/
+*.log
+history.json
+test_final*.json
+val_epoch*.json
+decode_sweep.json
+
+# ---- Figures ----
+*.pdf
+*.png
+!docs/**/*.png   # keep any committed doc images
+
+# ---- OS / editor ----
+.DS_Store
+.idea/
+.vscode/
