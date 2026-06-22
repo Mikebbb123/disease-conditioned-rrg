@@ -180,7 +180,7 @@ def train(model, train_dataset, val_dataset, train_config, device="cuda"):
 
             if epochs_without_improvement >= train_config.early_stop_patience:
                 print(f"[EarlyStop] Stopping at epoch {epoch+1} "
-                      f"(best macro-F1={best_score:.2f} at epoch {best_epoch})")
+                      f"(best = {best_score:.2f} at epoch {best_epoch})")
                 break
 
         if (epoch + 1) % train_config.save_every == 0:
