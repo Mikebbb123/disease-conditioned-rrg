@@ -24,18 +24,26 @@ import functools
 import importlib
 
 # ----- EDIT THESE -----
-R2GEN_REPO = os.environ.get("R2GEN_REPO", "./R2Gen")
+R2GEN_REPO = "/content/R2Gen"
 
 # YOUR model's eval dump. schema: {"samples":[{"id","prediction","reference"}]}
 # Pins the references and the id universe.
-YOUR_DUMP = "./dumps/ours_seed42_test_final.json"
+YOUR_DUMP = "/content/drive/MyDrive/iu_xray_rag/output_resampler_rag_seed42/test_final_oracle_42.json"
 
 # Other methods. List dumps: [{"id","generated"(,"view")}]  or  {"samples":[...]}.
 BASELINE_DUMPS = {
-    "PromptMRG": "./dumps/promptmrg_test_generated.json",
-    # "R2Gen": "./dumps/r2gen_test_generated.json",
-    # "Qwen":  "./dumps/qwen_test_generated.json",
-    # "NN":    "./dumps/nn_top1_test_generated.json",
+    "PromptMRG": "/content/drive/MyDrive/promptmrg/promptmrg_test_generated.json",
+    "seed42_oracle" : "/content/drive/MyDrive/iu_xray_rag/output_resampler_rag_seed42/test_final_oracle.json",
+    "seed87_oracle" : "/content/drive/MyDrive/iu_xray_rag/output_resampler_rag_seed87/test_final_oracle.json",
+    "seed13_oracle" : "/content/drive/MyDrive/iu_xray_rag/output_resampler_rag_seed13/test_final_oracle.json",
+    "seed42" : "/content/drive/MyDrive/iu_xray_rag/output_resampler_rag_seed42/test_final.json",
+    "seed13" : "/content/drive/MyDrive/iu_xray_rag/output_resampler_rag_seed13/test_final.json",
+    "seed87" : "/content/drive/MyDrive/iu_xray_rag/output_resampler_rag_seed87/test_final.json",
+    "R2Gen": "/content/drive/MyDrive/r2gen_test_generated.json",
+    "Qwen":  "/content/drive/MyDrive/eval_baseline_preds.json",
+    "NN":    "/content/drive/MyDrive/preds_nn_top1.json",
+    "Qwen_oracle": "/content/drive/MyDrive/eval_oracle_preds.json",
+  
 }
 # ----------------------
 
@@ -191,9 +199,3 @@ json.dump({"common_ids": common, "n": len(common), "rows": rows},
 print(f"\n[score] full metrics -> {out}")
 print("[score] NOTE: also report 5-class test-positive counts on this subset "
       "(Edema/Consolidation may drop below n=7/3); keep main Table 1 at 590.")
-import numpy as np
-CLASSES = ["Cardiomegaly","Edema","Consolidation","Atelectasis","Pleural Effusion"]
-# y_true_5 是 [349, 5] 的参考二值标签(与 F1 同口径)
-pos = (y_true_5 == 1).sum(axis=0)            # 若你的"阳性"= 标签==1
-print({c:int(n) for c,n in zip(CLASSES, pos)})
-print("ANY-abnormal studies:", int((y_true_5.sum(axis=1) > 0).sum()))
