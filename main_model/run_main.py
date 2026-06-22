@@ -100,7 +100,7 @@ def main():
         load_checkpoint(model, args.checkpoint)
 
     # =========================================================
-    # 4. Train
+    # 3. Train
     # =========================================================
     if not args.eval_only:
         print("\n" + "="*60 + "\nStep 4: Train\n" + "="*60)
@@ -118,7 +118,7 @@ def main():
         model.diagnose_xrv_hints(val_ds, device=args.device)
 
     # =========================================================
-    # 5. Final test evaluation
+    # 4. Final test evaluation
     # =========================================================
     print("\n" + "="*60 + "\nStep 5: Final test evaluation\n" + "="*60)
     from evaluate import evaluate_model
