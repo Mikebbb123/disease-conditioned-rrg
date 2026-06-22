@@ -82,11 +82,11 @@ class TrainConfig:
 
     finding_token_weight: float = 5.0   # weight for tokens in finding sentences (sweep 3-8)
 
-    # ---- Hint scheduled sampling: 训练喂 GT findings, 逐步混入 xrv 预测 ----
+    # ---- Hint scheduled sampling ----
     hint_gt_prob_start: float = 1.0    # epoch 0: 100% GT
-    hint_gt_prob_end:   float = 0.5    # 末期: 50% GT / 50% xrv 预测
-    hint_gt_decay_epochs: int = 20     # 线性衰减步数
-    hint_flip_prob: float = 0.0        # 可选: 对 hint 加翻转噪声 (0=关)
+    hint_gt_prob_end:   float = 0.5    # 50% GT / 50% xrv
+    hint_gt_decay_epochs: int = 20   
+    hint_flip_prob: float = 0.0        
 
     retrieval_k: int = 3
 
