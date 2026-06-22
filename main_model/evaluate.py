@@ -170,7 +170,6 @@ def compute_r2gen_metrics(predictions, references) -> Dict[str, float]:
         scores = compute_scores(gts, res)  # {BLEU_1..4, METEOR, ROUGE_L} in 0-1
     except Exception as e:
         print(f"[Eval] R2Gen compute_scores failed (METEOR needs Java?) — {e}")
-        # try BLEU/ROUGE only by catching METEOR; fall back to empty
         return {}
 
     out = {}
