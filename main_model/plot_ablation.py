@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Ablation Summary Bar Chart
+Ablation Summary Bar Chart – v3
+Colour palette & style matched to reference image.
 """
 
 import numpy as np
@@ -19,34 +20,25 @@ metrics = {
     "RadGraph-Simple": ([41.67, 28.76, 39.38, 39.77], [3.78, 4.26, 1.65, 1.76]),
 }
 
-# ── PALETTE ───────────────────────────────────────────────────────────────
-# Four clearly distinct hues, all desaturated to a sophisticated level.
-# Hue order: blue · coral · sage · amber  (cool-warm alternation aids separation)
-palette = {
-    "bar":   ["#6E8FAD", "#C07B72", "#7FA882", "#C9A55C"],
-    "alpha_bar": 0.88,
-    "edge":  ["#4A6A84", "#9A5048", "#4E8055", "#A07C2A"],  # darker edge per colour
-    "error": "#44444466",
-    "label_col": ["#000000", "#000000", "#000000", "#000000"],
-    "bg":    "#FFFFFF",
-    "grid":  "#E8E8E8",
-    "spine": "#CCCCCC",
-    "text":  "#000000",
-    "title": "#000000",
-}
+# ── PALETTE  (pixel-sampled from reference image) ─────────────────────────
+#   dusty rose · sage green · muted steel-blue · warm taupe
+BAR_COLORS  = ["#B8928B", "#8B9D83", "#7A9CAE", "#B4ACA4"]
+ERR_COLOR   = "#555555"
+TEXT_COLOR  = "#2A2A2A"
+GRID_COLOR  = "#EBEBEB"
 
-# ── STYLE SETUP ───────────────────────────────────────────────────────────
+# ── GLOBAL STYLE ──────────────────────────────────────────────────────────
 plt.rcParams.update({
     "font.family":      "DejaVu Sans",
     "font.size":        10.5,
-    "axes.edgecolor":   palette["spine"],
-    "axes.linewidth":   0.7,
-    "text.color":       palette["text"],
-    "axes.labelcolor":  palette["text"],
-    "xtick.color":      palette["text"],
-    "ytick.color":      palette["text"],
-    "figure.facecolor": palette["bg"],
-    "axes.facecolor":   palette["bg"],
+    "figure.facecolor": "#FFFFFF",
+    "axes.facecolor":   "#FFFFFF",
+    "axes.edgecolor":   "#CCCCCC",
+    "axes.linewidth":   0.6,
+    "text.color":       TEXT_COLOR,
+    "axes.labelcolor":  TEXT_COLOR,
+    "xtick.color":      TEXT_COLOR,
+    "ytick.color":      TEXT_COLOR,
 })
 
 # ── LAYOUT ────────────────────────────────────────────────────────────────
@@ -55,12 +47,11 @@ n_groups = len(configs)
 n_series = len(metric_names)
 
 x       = np.arange(n_groups)
-bar_w   = 0.20
-gap     = 0.035                        # extra gap between metric clusters
+bar_w   = 0.19
+gap     = 0.025
 offsets = (np.arange(n_series) - (n_series - 1) / 2) * (bar_w + gap)
 
 fig, ax = plt.subplots(figsize=(9.0, 5.0), dpi=300)
-fig.patch.set_facecolor(palette["bg"])
 
 # ── BARS ──────────────────────────────────────────────────────────────────
 for i, m in enumerate(metric_names):
@@ -68,101 +59,90 @@ for i, m in enumerate(metric_names):
     sds   = np.array(metrics[m][1], dtype=float)
     xpos  = x + offsets[i]
 
+    # flat, borderless bars — exactly like reference
     ax.bar(
         xpos, means, width=bar_w,
-        color=palette["bar"][i],
-        edgecolor=palette["edge"][i],
-        linewidth=0.8,
-        alpha=palette["alpha_bar"],
+        color=BAR_COLORS[i],
+        edgecolor="none",       # ← no outline, matches reference style
         zorder=3,
     )
 
-    # error bars – thin, dark, no fill
+    # error bars: thin, subdued
     ax.errorbar(
         xpos, means, yerr=sds,
         fmt="none",
-        ecolor=palette["edge"][i],
-        elinewidth=1.0,
-        capsize=3.0, capthick=1.0,
+        ecolor=ERR_COLOR,
+        elinewidth=0.9,
+        capsize=2.5, capthick=0.9,
         zorder=4,
     )
 
-    # value labels – colour-matched to each series, offset above error cap
+    # value labels
     for xi, mu, sd in zip(xpos, means, sds):
         ax.text(
-            xi, mu + sd + 1.1,
+            xi, mu + sd + 1.0,
             f"{mu:.1f}",
             ha="center", va="bottom",
-            fontsize=6.8,
-            color=palette["label_col"][i],
-            fontweight="semibold",
+            fontsize=6.5,
+            color=TEXT_COLOR,
             zorder=5,
         )
 
-# ── AXES COSMETICS ────────────────────────────────────────────────────────
+# ── AXES ──────────────────────────────────────────────────────────────────
 ax.set_xticks(x)
-ax.set_xticklabels(configs, fontsize=11, fontweight="medium")
+ax.set_xticklabels(configs, fontsize=11)
 ax.set_ylabel("Score", fontsize=10.5, labelpad=8)
 ax.set_ylim(0, 52)
 ax.set_xlim(-0.6, n_groups - 0.4)
 
-# refined grid: major every 10, minor every 5
+# grid: major every 10, minor every 5 — matching reference lightness
 ax.yaxis.set_major_locator(MultipleLocator(10))
 ax.yaxis.set_minor_locator(MultipleLocator(5))
-ax.yaxis.grid(True, which="major", color=palette["grid"], linewidth=0.9, zorder=0)
-ax.yaxis.grid(True, which="minor", color=palette["grid"], linewidth=0.4,
+ax.yaxis.grid(True, which="major", color=GRID_COLOR, linewidth=0.8, zorder=0)
+ax.yaxis.grid(True, which="minor", color=GRID_COLOR, linewidth=0.4,
               linestyle=":", zorder=0)
 ax.set_axisbelow(True)
 
-# remove unnecessary spines
-for sp in ["top", "right", "bottom"]:
-    ax.spines[sp].set_visible(False)
-ax.spines["left"].set_color(palette["spine"])
+# spines: keep only bottom + left (reference style)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.spines["left"].set_color(GRID_COLOR)
+ax.spines["bottom"].set_color(GRID_COLOR)
 ax.tick_params(axis="x", length=0, pad=6)
 ax.tick_params(axis="y", length=0)
 
 # ── TITLE ─────────────────────────────────────────────────────────────────
 ax.set_title(
     "Ablation Summary Bar Chart",
-    fontsize=14, fontweight="normal",
-    color=palette["title"], pad=14, loc="center",
+    fontsize=13, fontweight="normal",
+    color=TEXT_COLOR, pad=12, loc="center",
 )
 
 # ── LEGEND AT BOTTOM ─────────────────────────────────────────────────────
-# Custom handles so patch colour matches bar exactly
 handles = [
-    mpatches.Patch(
-        facecolor=palette["bar"][i],
-        edgecolor=palette["edge"][i],
-        linewidth=0.8,
-        alpha=palette["alpha_bar"],
-        label=m,
-    )
+    mpatches.Patch(facecolor=BAR_COLORS[i], edgecolor="none", label=m)
     for i, m in enumerate(metric_names)
 ]
-
 ax.legend(
     handles=handles,
     title="Metric",
     ncol=4,
     frameon=False,
     loc="upper center",
-    bbox_to_anchor=(0.5, -0.05),
+    bbox_to_anchor=(0.5, -0.14),
     bbox_transform=ax.transAxes,
-    handlelength=1.4,
-    handleheight=1.0,
+    handlelength=1.4, handleheight=1.0,
     columnspacing=1.6,
-    fontsize=9.5,
-    title_fontsize=9.5,
+    fontsize=9.5, title_fontsize=9.5,
 )
 
 # ── EXPORT ────────────────────────────────────────────────────────────────
 plt.tight_layout(rect=[0, 0.02, 1, 1])
 plt.subplots_adjust(bottom=0.17)
 
-out_png = "ablation_summary.png"
-out_pdf = "ablation_summary.pdf"
-plt.savefig(out_png, bbox_inches="tight", dpi=1000, facecolor=palette["bg"])
-plt.savefig(out_pdf, bbox_inches="tight", facecolor=palette["bg"])
+out_png = "/mnt/user-data/outputs/ablation_summary_v3.png"
+out_pdf = "/mnt/user-data/outputs/ablation_summary_v3.pdf"
+plt.savefig(out_png, bbox_inches="tight", dpi=1000, facecolor="white")
+plt.savefig(out_pdf, bbox_inches="tight",            facecolor="white")
 print("Saved:", out_png)
 print("Saved:", out_pdf)
