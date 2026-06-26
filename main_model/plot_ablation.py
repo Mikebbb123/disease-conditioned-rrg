@@ -6,11 +6,19 @@ Colour palette & style matched to reference image.
 """
 
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.ticker import MultipleLocator
 
 # ── DATA ──────────────────────────────────────────────────────────────────
+# Protocol: IU-Xray 590-sample TEST split, R2Gen NLG protocol, mean ± SD over
+# 3 seeds (42, 13, 87). The "Full" column matches the README headline /
+# comparison tables exactly (BLEU-4 18.49, micro-F1(5) 30.31, macro-F1(5)
+# 18.87, RadGraph-Simple 41.67) and the +visual-token BLEU-4 (17.92) matches
+# README line 31. These are NOT the 349 common-subset numbers used by
+# make_plots.py's SCATTER_POINTS — do not cross-compare the two.
+# (The −hint F1 SDs of 0.00 are correct, not placeholders.)
 configs = ["Full", "−hint", "−cls", "+visual-token"]
 
 metrics = {
@@ -140,9 +148,16 @@ ax.legend(
 plt.tight_layout(rect=[0, 0.02, 1, 1])
 plt.subplots_adjust(bottom=0.17)
 
-out_png = "/mnt/user-data/outputs/ablation_summary.png"
-out_pdf = "/mnt/user-data/outputs/ablation_summary.pdf"
-plt.savefig(out_png, bbox_inches="tight", dpi=1000, facecolor="white")
-plt.savefig(out_pdf, bbox_inches="tight", facecolor="white")
+import argparse
+_parser = argparse.ArgumentParser(description="Ablation summary bar chart.")
+_parser.add_argument("--figdir", default="figures",
+                     help="Output directory (matches make_plots.py; default: figures/).")
+_args, _ = _parser.parse_known_args()
+os.makedirs(_args.figdir, exist_ok=True)
+
+out_png = os.path.join(_args.figdir, "fig_ablation_summary.png")
+out_pdf = os.path.join(_args.figdir, "fig_ablation_summary.pdf")
+plt.savefig(out_png, bbox_inches="tight", dpi=300, facecolor="white")  # 300 ~ make_plots.py
+plt.savefig(out_pdf, bbox_inches="tight", facecolor="white")           # vector
 print("Saved:", out_png)
 print("Saved:", out_pdf)
