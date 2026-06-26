@@ -28,7 +28,7 @@ on its own — `cd` into it and launch directly, no shared imports across folder
 | Folder | Variant | Notes |
 |--------|---------|-------|
 | `main_model/` | **Full model (canonical)** | Paper headline numbers (BLEU-4 = 18.49). `use_visual_tokens=False`; supports the `--no_hint` / `--no_cls_loss` ablations. Also holds the sanity checks, plotting, baseline dumps, and paper analyses. **Start here.** |
-| `visual_token_ablation/` | `+visual_token` ablation | Adds a zero-init gated visual-token path (`use_visual_tokens=True`). Reported as an ablation (BLEU-4 = 17.04); kept for reproducibility. Contains only the core training/eval modules. |
+| `visual_token_ablation/` | `+visual_token` ablation | Adds a zero-init gated visual-token path (`use_visual_tokens=True`). Reported as an ablation (BLEU-4 = 17.92); kept for reproducibility. Contains only the core training/eval modules. |
 
 Unless you specifically want the visual-token ablation, use `main_model/`. The
 two folders intentionally duplicate the **core** modules (`data.py`,
@@ -108,6 +108,8 @@ check_cls_grad.py        Sanity check: cls_loss gradients reach the Perceiver
 check_finding_weights.py Sanity check: finding-token weighting
 decollapse_check.py      Sanity check: template collapse in generated reports
 make_plots.py            Publication figures (multi-seed; standard/oracle, NN baseline)
+plot_ablation.py         Standalone ablation summary bar chart (Full / −hint / −cls /
+                         +visual-token); writes figures/fig_ablation_summary.{png,pdf}
 ```
 
 ### main_model only — baselines & analysis
@@ -122,6 +124,10 @@ analysis/
   score_common_subset.py          Re-score all methods on the common n=349 subset (Table 1b)
   significance_test.py            Paired bootstrap CI + p-value; Wilcoxon / Cliff's delta
   chexpert_independence_check.py  Independent CheXpert rule-based labeler robustness check
+  mimic_textonly_validation.py    Cross-corpus, image-free check on MIMIC-CXR *reports*
+                                  (Table 6): a pure-baseline (constant input) and a
+                                  GT-label-conditioned text-only proxy, scored through the
+                                  same chexbert_eval / radgraph_eval / R2Gen-NLG pipeline
 ```
 
 ---
@@ -311,6 +317,47 @@ checkpoints, and generated dumps are git-ignored — clone/download them locally
 > *parameter*-independent sanity check, not proof of labeler-independent content —
 > CheXbert was distilled to imitate the CheXpert rule-based labeler. Bootstrap CIs
 > reflect test-set sampling only, not baseline retraining variance.
+
+---
+
+## Cross-corpus text-only validation (MIMIC-CXR)
+
+To rule out the "single-dataset artifact" objection — that the lexical-vs-clinical
+tension and the template-collapse pattern are peculiar to IU-Xray — we replicate
+the effect on a subsampled **MIMIC-CXR reports** corpus **without images**, using
+only the text reports plus the CheXpert label CSV. This runs anywhere the images
+are unavailable (e.g. Colab).
+
+`analysis/mimic_textonly_validation.py` has two modes:
+
+- `pure_baseline` — a SciFive-T5 fed a **constant** input, so it can only learn the
+  marginal `p(report)` (the normal-finding template). Expectation: high
+  BLEU/ROUGE/CIDEr/RadGraph, ≈0 CheXbert macro-F1(5). This is the text-only analog
+  of the IU-Xray "Pure Baseline".
+- `label_conditioned` (with `class_balanced=True`) — the encoder is fed the
+  **ground-truth** 5-class CheXpert labels as a cue prompt, with normal-sample
+  undersampling. Expectation: recovers non-zero CheXbert F1 at a small lexical cost.
+  This conditions on GT labels, so it is a controlled **text-only proxy** for the
+  recovery effect, *not* a transfer of the full image-based pipeline — label it as
+  such in the paper.
+
+It reuses `chexbert_eval.py` / `radgraph_eval.py` unchanged and a verbatim copy of
+`compute_captioning_metrics`, and reports the R2Gen NLG protocol (Java-free:
+`clean_report_mimic_cxr` + vendored `pycocoevalcap`), so the numbers are computed by
+identical code to the IU-Xray results. NLG/clinical numbers feed **Table 6**.
+
+```bash
+# needs: MIMIC-CXR report .txt files + mimic-cxr-2.0.0-chexpert.csv.gz
+#        (images NOT required); edit the paths in the Config dataclass.
+cd main_model
+python analysis/mimic_textonly_validation.py     # runs seeds 42/13/87, prints Table 6 rows
+```
+
+Edit `mode` / `class_balanced` and the `reports_dir` / `chexpert_csv` paths in the
+`Config` dataclass at the top of the script. Results land as
+`results_<mode>[_balanced]_seed<seed>.json` in `output_dir`. As with the other
+`analysis/` scripts, the bare `from chexbert_eval import …` resolves because the
+script puts `main_model/` on `sys.path` at import time.
 
 ---
 
