@@ -140,9 +140,9 @@ ax.legend(
 plt.tight_layout(rect=[0, 0.02, 1, 1])
 plt.subplots_adjust(bottom=0.17)
 
-out_png = "/mnt/user-data/outputs/ablation_summary_v3.png"
-out_pdf = "/mnt/user-data/outputs/ablation_summary_v3.pdf"
+out_png = "/mnt/user-data/outputs/ablation_summary.png"
+out_pdf = "/mnt/user-data/outputs/ablation_summary.pdf"
 plt.savefig(out_png, bbox_inches="tight", dpi=1000, facecolor="white")
-plt.savefig(out_pdf, bbox_inches="tight",            facecolor="white")
+plt.savefig(out_pdf, bbox_inches="tight", facecolor="white")
 print("Saved:", out_png)
 print("Saved:", out_pdf)
