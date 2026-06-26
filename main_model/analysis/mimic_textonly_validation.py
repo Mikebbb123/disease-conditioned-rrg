@@ -48,6 +48,13 @@ from transformers import (
 )
 
 # Reuse YOUR evaluators unchanged --------------------------------------------
+# This script lives in main_model/analysis/ but imports the top-level core
+# modules (chexbert_eval, radgraph_eval). Put main_model/ on the path so the
+# bare imports resolve no matter where the script is launched from. If you move
+# this file back up to main_model/ top level, this line is a harmless no-op.
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+
 from chexbert_eval import get_chexbert_labeler, compute_clinical_f1_chexbert
 from radgraph_eval import compute_radgraph_f1
 
